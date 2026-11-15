@@ -5,144 +5,210 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Interview Monitor</title>
 <style>
-  :root { --bg:#f6f7f9; --card:#fff; --text:#1c1f24; --muted:#6b7280; --ok:#16a34a; --bad:#dc2626; --accent:#ea580c; --border:#e5e7eb; }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg:#14161a; --card:#1d2026; --text:#e8eaed; --muted:#9aa0a6; --border:#2e333b; }
-  }
-  * { box-sizing:border-box; }
-  body { margin:0; font-family:system-ui,"Segoe UI",Tahoma,sans-serif; background:var(--bg); color:var(--text); }
-  main { max-width:960px; margin:0 auto; padding:20px; display:grid; gap:16px; }
-  .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; }
-  h1 { font-size:20px; margin:0 0 4px; }
-  p.muted { color:var(--muted); margin:0; font-size:14px; }
-  .stage { position:relative; width:100%; max-width:640px; margin:0 auto; background:#000; border-radius:10px; overflow:hidden; aspect-ratio:4/3; }
-  video { width:100%; height:100%; object-fit:cover; display:block; }
-  #badge { position:absolute; top:10px; inset-inline-start:10px; padding:6px 12px; border-radius:8px; font-weight:600; background:var(--ok); color:#fff; }
-  #badge.bad { background:var(--bad); }
-  #debug { position:absolute; bottom:8px; inset-inline-start:10px; font:12px monospace; color:#fff; background:rgba(0,0,0,.55); padding:3px 8px; border-radius:6px; direction:ltr; }
-  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; }
-  button { font:inherit; padding:9px 18px; border-radius:8px; border:0; cursor:pointer; background:var(--accent); color:#fff; font-weight:600; }
-  button.secondary { background:transparent; color:var(--text); border:1px solid var(--border); }
-  button:disabled { opacity:.5; cursor:not-allowed; }
-  label.consent { display:flex; gap:8px; align-items:flex-start; font-size:14px; }
-  #events { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; margin-top:12px; }
-  .ev { border:1px solid var(--border); border-radius:8px; overflow:hidden; font-size:12px; }
-  .ev img { width:100%; display:block; }
-  .ev div { padding:6px 8px; }
-  .count { font-size:28px; font-weight:700; color:var(--accent); }
-  #msg { color:var(--bad); font-size:14px; min-height:20px; }
+  body { font-family: Arial, Tahoma, sans-serif; margin: 0; background: #f5f6f8; color: #222; }
+  main { max-width: 900px; margin: 0 auto; padding: 16px; }
+  h1 { margin: 8px 0 12px; }
+  h2 { margin: 0 0 8px; font-size: 18px; }
+  .note { background: #e8f1ff; border-radius: 8px; padding: 12px; font-size: 15px; line-height: 1.6; }
+  .card { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 14px; margin-top: 14px; }
+  label { display: block; margin: 8px 0; font-size: 16px; }
+  textarea { width: 100%; box-sizing: border-box; min-height: 130px; font-size: 16px; padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; }
+  button { padding: 10px 18px; font-size: 16px; border: 0; border-radius: 6px; background: #c9304a; color: #fff; cursor: pointer; margin-inline-end: 6px; }
+  button.gray { background: #666; }
+  button:disabled { background: #bbb; cursor: not-allowed; }
+  .stage { position: relative; width: 100%; max-width: 560px; margin: 0 auto; background: #000; border-radius: 8px; overflow: hidden; }
+  video { width: 100%; display: block; }
+  canvas#overlay { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #status, #speechStatus { color: #555; font-size: 14px; }
+  #qCounter { color: #777; font-size: 14px; }
+  #qText { font-size: 26px; line-height: 1.6; margin: 8px 0 12px; font-weight: bold; }
+  #timer { color: #777; margin-inline-start: 10px; }
+  #speechBox { min-height: 90px; max-height: 240px; overflow-y: auto; font-size: 22px; line-height: 1.7; background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 10px; }
+  #interim { color: #999; }
+  #shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; margin-top: 10px; }
+  #shots figure { margin: 0; }
+  #shots img { width: 100%; border-radius: 6px; }
+  #shots figcaption { font-size: 13px; color: #666; text-align: center; }
+  .qa { border-top: 1px solid #eee; padding: 10px 0; }
+  .qa .q { font-weight: bold; }
+  .qa .ev { color: #b00; font-size: 14px; }
+  .hidden { display: none; }
 </style>
 </head>
 <body>
 <main>
-  <section class="card">
-    <h1>مراقبة المقابلة / الامتحان</h1>
-  </section>
+  <h1>مقابلة العمل الأونلاين</h1>
 
-  <section class="card">
-    <label class="consent">
-      <input type="checkbox" id="consent">
-      <span>أوافق على تشغيل الكاميرا لمراقبة الجلسة (إشعار الخصوصية).</span>
-    </label>
-    <div class="row" style="margin-top:12px">
-      <div>
-        <button id="startBtn" disabled>ابدأ الجلسة</button>
-        <button id="stopBtn" class="secondary" disabled>إنهاء</button>
+  <div class="note">
+    إشعار الخصوصية: سيتم تحليل الكاميرا لاكتشاف دوران الرأس أو النظر بعيداً أو غياب الوجه أو وجود أكثر من وجه.
+    إذا سمحت بالميكروفون فسيتم تحويل إجاباتك إلى نص باستخدام خدمة Google للتعرف على الكلام.
+    لا يتم حفظ أي شيء على أي خادم، واللقطات والنص تبقى في هذه الصفحة فقط.
+    هذه الأحداث تحتاج لمراجعة بشرية وليست دليلاً على أي مخالفة.
+  </div>
+
+  <!-- 1) Setup -->
+  <div class="card" id="setupCard">
+    <h2>الإعداد</h2>
+    <label><input type="checkbox" id="consentCam"> أوافق على مراقبة الكاميرا</label>
+    <label><input type="checkbox" id="consentMic"> أوافق على تسجيل صوتي وتحويل إجاباتي إلى نص (الميكروفون)</label>
+    <label for="questionsBox">الأسئلة (سؤال في كل سطر، ويمكنك تعديلها):</label>
+    <textarea id="questionsBox">عرّف بنفسك باختصار.
+لماذا اخترت هذا التخصص أو المجال؟
+ما هي أبرز نقاط قوتك؟
+حدثني عن مشروع أو تجربة أنت فخور بها.
+كيف تتعامل مع الضغط وضيق الوقت؟
+أين ترى نفسك بعد خمس سنوات؟</textarea>
+    <p style="margin-bottom:0">
+      <button id="startBtn" disabled>بدء المقابلة</button>
+      <span id="status"></span>
+    </p>
+  </div>
+
+  <!-- 2) Interview -->
+  <div id="interviewArea" class="hidden">
+    <div class="card">
+      <div class="stage">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="overlay"></canvas>
       </div>
-      <div>الأحداث المحتملة: <span class="count" id="count">0</span></div>
     </div>
-    <div id="msg"></div>
-  </section>
 
-  <section class="card">
-    <div class="stage">
-      <video id="video" autoplay playsinline muted></video>
-      <div id="badge">OK</div>
-      <div id="debug">head=0.00 gaze=0.00</div>
+    <div class="card">
+      <div><span id="qCounter"></span><span id="timer"></span></div>
+      <div id="qText"></div>
+      <button id="readBtn" class="gray">🔊 اقرأ السؤال</button>
+      <button id="nextBtn">السؤال التالي ◀</button>
+      <button id="finishBtn" class="gray">إنهاء المقابلة</button>
     </div>
-  </section>
 
-  <section class="card">
-    <div class="row">
-      <strong>اللقطات المسجلة</strong>
-      <button id="dlBtn" class="secondary" disabled>تنزيل التقرير (JSON)</button>
+    <div class="card">
+      <h2>إجابتك المكتوبة <span id="speechStatus"></span></h2>
+      <div id="speechBox"><div id="lines"></div><div id="interim"></div></div>
+      <button id="speechBtn" class="gray hidden" style="margin-top:10px">إيقاف الميكروفون</button>
     </div>
-    <div id="events"></div>
-  </section>
+
+    <div class="card">
+      الأحداث المحتملة: <b id="events">0</b>
+      <div id="shots"></div>
+    </div>
+  </div>
+
+  <!-- 3) Summary -->
+  <div id="summaryCard" class="card hidden">
+    <h2>ملخص المقابلة</h2>
+    <div id="summary"></div>
+    <button id="downloadBtn" style="margin-top:12px">تنزيل التقرير (txt)</button>
+    <button id="restartBtn" class="gray" style="margin-top:12px">مقابلة جديدة</button>
+  </div>
 </main>
 
 <script type="module">
-import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/+esm";
 
-// ---- Settings (same values as monitor.py) ----
-const MODEL_PATH = "face_landmarker.task";
+// ---------------- Settings (same values as monitor.py) ----------------
 const HEAD_TURN_LIMIT = 0.20;
-const GAZE_LIMIT = 0.10;
-const SUSPICIOUS_SECONDS = 1.0;
+const GAZE_LIMIT = 0.05;
+const SUSPICIOUS_SECONDS = 0.5;
 const COOLDOWN_SECONDS = 2.0;
 const GRACE_SECONDS = 0.7;
+const LANGUAGE_CODE = "ar-EG";   // "ar-EG" Egyptian, "ar-SA" Saudi, "en-US" English
+const MAX_SNAPSHOTS = 12;
+
+const WASM_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
+const MODEL_URL = "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
 
 const $ = (id) => document.getElementById(id);
-const video = $("video"), badge = $("badge"), debug = $("debug");
-const startBtn = $("startBtn"), stopBtn = $("stopBtn"), dlBtn = $("dlBtn");
-const msg = $("msg");
+const video = $("video"), overlay = $("overlay"), ctx = overlay.getContext("2d");
+const startBtn = $("startBtn"), statusEl = $("status");
 
-let landmarker = null, stream = null, running = false;
-let suspiciousSince = null, lastSaved = 0, lastSeenBad = 0, eventsCount = 0;
-let lastVideoTime = -1;
-const events = [];
+$("consentCam").onchange = () => { startBtn.disabled = !$("consentCam").checked; };
 
-$("consent").addEventListener("change", (e) => { startBtn.disabled = !e.target.checked; });
+// ---------------- Interview state ----------------
+let questions = [];
+let qi = 0;
+let answers = [];        // per question: { lines: [{t, text}], events: [{t, reason}] }
+let qStartedAt = 0;
+let totalEvents = 0;
+let timerId = null;
+let startedAt = null;
 
-// Same math as analyze_face() in monitor.py
+function fmtTime(d = new Date()) { return d.toLocaleTimeString("en-GB"); }
+
+function showQuestion(i) {
+  qi = i;
+  answers[qi] = answers[qi] || { lines: [], events: [] };
+  $("qCounter").textContent = "السؤال " + (qi + 1) + " من " + questions.length;
+  $("qText").textContent = questions[qi];
+  $("lines").innerHTML = "";
+  $("interim").textContent = "";
+  $("nextBtn").textContent = qi === questions.length - 1 ? "إنهاء المقابلة ✔" : "السؤال التالي ◀";
+  qStartedAt = Date.now();
+}
+
+setInterval(() => {
+  if (!running) return;
+  const s = Math.floor((Date.now() - qStartedAt) / 1000);
+  $("timer").textContent = "  ⏱ " + Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+}, 1000);
+
+// ---------------- Detection logic (ported from monitor.py) ----------------
 function analyzeFace(lm) {
   const left = lm[234].x, right = lm[454].x, nose = lm[1].x;
   const faceW = Math.max(right - left, 1e-6);
-  const head = ((nose - left) / faceW) - 0.5;
-
+  const head = (nose - left) / faceW - 0.5;
   const eyeRatio = (iris, c1, c2) => {
     const a = lm[c1].x, b = lm[c2].x;
     const w = Math.max(Math.abs(b - a), 1e-6);
-    return ((lm[iris].x - Math.min(a, b)) / w) - 0.5;
+    return (lm[iris].x - Math.min(a, b)) / w - 0.5;
   };
   const gaze = (eyeRatio(468, 33, 133) + eyeRatio(473, 362, 263)) / 2;
   return [head, gaze];
 }
 
-function saveCapture(reason) {
-  const c = document.createElement("canvas");
-  c.width = video.videoWidth; c.height = video.videoHeight;
-  c.getContext("2d").drawImage(video, 0, 0);
-  const dataUrl = c.toDataURL("image/jpeg", 0.8);
-  const time = new Date();
-  events.push({ time: time.toISOString(), reason, image: dataUrl });
+let landmarker = null;
+let suspiciousSince = null, lastSaved = 0, lastSeenBad = 0, lastVideoTime = -1;
+let running = false;
 
-  const el = document.createElement("div");
-  el.className = "ev";
-  el.innerHTML = `<img src="${dataUrl}" alt="${reason}"><div><b>${reason}</b><br>${time.toLocaleTimeString()}</div>`;
-  $("events").prepend(el);
-  dlBtn.disabled = false;
-  // TODO: send { time, reason, image } to your server here (fetch POST)
+function drawText(text, x, y, color, size = 22) {
+  ctx.direction = "ltr";
+  ctx.textAlign = "left";
+  ctx.font = "bold " + size + "px Arial";
+  ctx.fillStyle = color;
+  ctx.fillText(text, x, y);
 }
 
-function setBadge(text, bad) {
-  badge.textContent = text;
-  badge.classList.toggle("bad", bad);
+function saveSnapshot(reason) {
+  const c = document.createElement("canvas");
+  c.width = video.videoWidth; c.height = video.videoHeight;
+  const cx = c.getContext("2d");
+  cx.drawImage(video, 0, 0);
+  cx.font = "bold 28px Arial"; cx.fillStyle = "red";
+  cx.fillText("WARNING: " + reason, 20, 40);
+  const fig = document.createElement("figure");
+  const img = document.createElement("img");
+  img.src = c.toDataURL("image/jpeg", 0.7);
+  const cap = document.createElement("figcaption");
+  cap.textContent = fmtTime() + " - Q" + (qi + 1) + " - " + reason;
+  fig.append(img, cap);
+  const shots = $("shots");
+  shots.prepend(fig);
+  while (shots.children.length > MAX_SNAPSHOTS) shots.removeChild(shots.lastChild);
 }
 
 function loop() {
   if (!running) return;
   if (video.readyState >= 2 && video.currentTime !== lastVideoTime) {
     lastVideoTime = video.currentTime;
-    const result = landmarker.detectForVideo(video, performance.now());
-    const faces = result.faceLandmarks;
-    let reason = null;
+    overlay.width = video.videoWidth; overlay.height = video.videoHeight;
+    ctx.clearRect(0, 0, overlay.width, overlay.height);
 
+    const faces = landmarker.detectForVideo(video, performance.now()).faceLandmarks;
+    let reason = null;
     if (faces.length === 0) reason = "no_face";
     else if (faces.length > 1) reason = "multiple_faces";
     else {
       const [head, gaze] = analyzeFace(faces[0]);
-      debug.textContent = `head=${head.toFixed(2)} gaze=${gaze.toFixed(2)}`;
+      drawText(`head=${head.toFixed(2)} gaze=${gaze.toFixed(2)}`, 20, 80, "#3355ff", 18);
       if (Math.abs(head) > HEAD_TURN_LIMIT) reason = "head_turned";
       else if (Math.abs(gaze) > GAZE_LIMIT) reason = "looking_away";
     }
@@ -151,70 +217,206 @@ function loop() {
     if (reason) {
       lastSeenBad = now;
       if (suspiciousSince === null) suspiciousSince = now;
-      const elapsed = now - suspiciousSince;
-      setBadge("WARNING: " + reason, true);
-      if (elapsed >= SUSPICIOUS_SECONDS && now - lastSaved >= COOLDOWN_SECONDS) {
-        saveCapture(reason);
+      drawText("WARNING: " + reason, 20, 40, "red", 28);
+      if (now - suspiciousSince >= SUSPICIOUS_SECONDS && now - lastSaved >= COOLDOWN_SECONDS) {
+        saveSnapshot(reason);
         lastSaved = now;
-        eventsCount++;
-        $("count").textContent = eventsCount;
+        totalEvents++;
+        answers[qi].events.push({ t: fmtTime(), reason });
+        $("events").textContent = totalEvents;
       }
     } else {
       if (suspiciousSince !== null && now - lastSeenBad > GRACE_SECONDS) suspiciousSince = null;
-      setBadge("OK", false);
+      drawText("OK", 20, 40, "#0a0", 28);
     }
   }
   requestAnimationFrame(loop);
 }
 
-async function start() {
-  msg.textContent = "";
+// ---------------- Start ----------------
+startBtn.onclick = async () => {
+  questions = $("questionsBox").value.split("\n").map((q) => q.trim()).filter(Boolean);
+  if (questions.length === 0) { statusEl.textContent = "اكتب سؤالاً واحداً على الأقل."; return; }
+
   startBtn.disabled = true;
+  statusEl.textContent = "جاري تحميل النموذج... انتظر لحظات";
   try {
     if (!landmarker) {
-      const fileset = await FilesetResolver.forVisionTasks(
-        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
-      );
+      const fileset = await FilesetResolver.forVisionTasks(WASM_URL);
       landmarker = await FaceLandmarker.createFromOptions(fileset, {
-        baseOptions: { modelAssetPath: MODEL_PATH },
+        baseOptions: { modelAssetPath: MODEL_URL },
         runningMode: "VIDEO",
-        numFaces: 2
+        numFaces: 2,
       });
     }
-    stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+    statusEl.textContent = "جاري تشغيل الكاميرا...";
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
     video.srcObject = stream;
     await video.play();
-    running = true;
-    stopBtn.disabled = false;
-    $("consent").disabled = true;
-    requestAnimationFrame(loop);
-  } catch (err) {
-    msg.textContent = "خطأ: " + (err.message || err) + " (لازم تفتح الصفحة من سيرفر محلي أو HTTPS، ومعاها face_landmarker.task)";
+  } catch (e) {
+    statusEl.textContent = "خطأ: " + (e.message || e);
     startBtn.disabled = false;
+    return;
   }
+
+  // reset
+  answers = []; totalEvents = 0; $("events").textContent = "0"; $("shots").innerHTML = "";
+  suspiciousSince = null; startedAt = new Date();
+  $("setupCard").classList.add("hidden");
+  $("summaryCard").classList.add("hidden");
+  $("interviewArea").classList.remove("hidden");
+  showQuestion(0);
+  running = true;
+  requestAnimationFrame(loop);
+
+  if ($("consentMic").checked) {
+    $("speechBtn").classList.remove("hidden");
+    startSpeech();
+  } else {
+    $("speechStatus").textContent = "(الميكروفون غير مفعّل)";
+  }
+};
+
+// ---------------- Question navigation ----------------
+$("readBtn").onclick = () => {
+  if (!("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(questions[qi]);
+  u.lang = LANGUAGE_CODE;
+  speechSynthesis.speak(u);
+};
+
+function flushInterim() {
+  const t = $("interim").textContent.trim();
+  if (t) addLine(t);
 }
 
-function stop() {
+$("nextBtn").onclick = () => {
+  flushInterim();
+  speechSynthesis.cancel();
+  if (qi >= questions.length - 1) finishInterview();
+  else showQuestion(qi + 1);
+};
+$("finishBtn").onclick = () => { flushInterim(); speechSynthesis.cancel(); finishInterview(); };
+
+// ---------------- Finish + summary ----------------
+function finishInterview() {
   running = false;
-  if (stream) stream.getTracks().forEach((t) => t.stop());
+  if (video.srcObject) video.srcObject.getTracks().forEach((t) => t.stop());   // turns the camera off
   video.srcObject = null;
-  stopBtn.disabled = true;
-  startBtn.disabled = !$("consent").checked;
-  $("consent").disabled = false;
-  setBadge("OK", false);
+  stopSpeech();
+  $("interviewArea").classList.add("hidden");
+  buildSummary();
+  $("summaryCard").classList.remove("hidden");
 }
 
-startBtn.addEventListener("click", start);
-stopBtn.addEventListener("click", stop);
+function buildSummary() {
+  const box = $("summary");
+  box.innerHTML = "";
+  const head = document.createElement("p");
+  head.textContent = "عدد الأسئلة: " + questions.length + " | الأحداث المحتملة: " + totalEvents;
+  box.appendChild(head);
 
-dlBtn.addEventListener("click", () => {
-  const report = { potential_events: eventsCount, events, note: "These events need human review; they are not proof of misconduct." };
-  const blob = new Blob([JSON.stringify(report)], { type: "application/json" });
+  questions.forEach((q, i) => {
+    const a = answers[i] || { lines: [], events: [] };
+    const div = document.createElement("div");
+    div.className = "qa";
+    const qd = document.createElement("div");
+    qd.className = "q"; qd.textContent = (i + 1) + ". " + q;
+    const ad = document.createElement("div");
+    ad.textContent = a.lines.length ? a.lines.map((l) => l.text).join(" ") : "(لا توجد إجابة مسجّلة)";
+    const ed = document.createElement("div");
+    ed.className = "ev";
+    ed.textContent = a.events.length
+      ? "أحداث مشبوهة: " + a.events.map((e) => e.reason + " (" + e.t + ")").join("، ")
+      : "";
+    div.append(qd, ad, ed);
+    box.appendChild(div);
+  });
+}
+
+$("downloadBtn").onclick = () => {
+  let out = "Interview report\nDate: " + (startedAt ? startedAt.toLocaleString("en-GB") : "") + "\n";
+  out += "Potential events: " + totalEvents + "\n(These events need human review; they are not proof of misconduct.)\n\n";
+  questions.forEach((q, i) => {
+    const a = answers[i] || { lines: [], events: [] };
+    out += (i + 1) + ". " + q + "\n";
+    out += "Answer: " + (a.lines.length ? a.lines.map((l) => "[" + l.t + "] " + l.text).join(" ") : "(none)") + "\n";
+    if (a.events.length) out += "Events: " + a.events.map((e) => e.reason + " (" + e.t + ")").join(", ") + "\n";
+    out += "\n";
+  });
+  const blob = new Blob([out], { type: "text/plain;charset=utf-8" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "session_report.json";
+  a.download = "interview_report.txt";
   a.click();
-});
+};
+
+$("restartBtn").onclick = () => {
+  $("summaryCard").classList.add("hidden");
+  $("setupCard").classList.remove("hidden");
+  statusEl.textContent = "";
+  startBtn.disabled = !$("consentCam").checked;
+};
+
+// ---------------- Speech to text (Chrome / Edge) ----------------
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const speechStatus = $("speechStatus"), linesEl = $("lines"), interimEl = $("interim"), speechBox = $("speechBox");
+let rec = null, active = false, listening = false;
+
+function addLine(text) {
+  if (!text) return;
+  const d = document.createElement("div");
+  d.innerHTML = "<small style='color:#888'>" + fmtTime() + "</small> &nbsp; ";
+  d.appendChild(document.createTextNode(text));
+  linesEl.appendChild(d);
+  speechBox.scrollTop = speechBox.scrollHeight;
+  if (answers[qi]) answers[qi].lines.push({ t: fmtTime(), text });
+}
+
+// Chrome ends a listening session from time to time, so we start a fresh one each time.
+function startSession() {
+  if (!active || listening) return;
+  rec = new SR();
+  rec.lang = LANGUAGE_CODE;
+  rec.continuous = true;
+  rec.interimResults = true;
+  rec.onstart = () => { listening = true; speechStatus.textContent = "🎤 يستمع... تفضّل بالإجابة"; };
+  rec.onresult = (e) => {
+    if (speechSynthesis.speaking) return;      // ignore the question being read aloud
+    let interim = "";
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const r = e.results[i];
+      if (r.isFinal) addLine(r[0].transcript.trim());
+      else interim += r[0].transcript;
+    }
+    interimEl.textContent = interim;
+  };
+  rec.onerror = (e) => {
+    if (e.error === "no-speech" || e.error === "aborted") return;
+    speechStatus.textContent = "خطأ: " + e.error;
+    if (e.error === "not-allowed" || e.error === "service-not-allowed") active = false;
+  };
+  rec.onend = () => {
+    listening = false;
+    interimEl.textContent = "";
+    if (active) setTimeout(startSession, 300);
+    else speechStatus.textContent = "(الميكروفون متوقف)";
+  };
+  try { rec.start(); } catch (_) { listening = false; }
+}
+setInterval(() => { if (active && !listening) startSession(); }, 2000);
+
+function startSpeech() {
+  if (!SR) { speechStatus.textContent = "المتصفح لا يدعم التعرف على الكلام. استخدم Chrome أو Edge."; return; }
+  active = true; $("speechBtn").textContent = "إيقاف الميكروفون"; startSession();
+}
+function stopSpeech() { active = false; if (rec) { try { rec.stop(); } catch (_) {} } }
+
+$("speechBtn").onclick = () => {
+  if (active) { stopSpeech(); $("speechBtn").textContent = "تشغيل الميكروفون"; }
+  else startSpeech();
+};
 </script>
 </body>
 </html>
